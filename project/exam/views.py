@@ -160,7 +160,7 @@ class AttendQuestionView(APIView):
             else:
                 # time remaining to qns the answer
                 print("remaining time is",delta)
-                return Response({"remainingTime":str(delta)})
+                return Response({"remainingTime":str(delta),"qns":QuestionSerializer(qnsObj).data})
         else :
             # create a qns attended obj
 
@@ -177,7 +177,8 @@ class AttendQuestionView(APIView):
 
                 )
             newUserQnsObj.save()
-            return Response({"remainingTime":str(delta)})
+            
+            return Response({"remainingTime":str(delta),"qns":QuestionSerializer(qnsObj).data})
 
         return Response()
 class SubmitQnsView(APIView):
