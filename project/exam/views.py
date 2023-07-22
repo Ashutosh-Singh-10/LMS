@@ -77,10 +77,50 @@ class AttendExamView(APIView):
         }
         return Response(res)
 
+class SubmitExamView(APIView):
+    authentication_classes=[JWTAuthentication]
+    def post(self,request):
+        if request.user.is_anonymous:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        user=request.user
+        if "examId" not in request.data :
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        examId=request.data["examId"]
+        exam=Exam.objects.filter(id=examId).first()
+        if not exam:
+            return Response({"message":"No such exam exists"},status=status.HTTP_404_NOT_FOUND)
+        examAttendedObj=ExamAttended.objects.filter(examId=exam,attendedBy=user).first()
+        if not examAttendedObj:
+            return Response({"message":"You have to attend the exam before submitting the exam."},status=status.HTTP_404_NOT_FOUND)
+        if examAttendedObj.timeAlloted<datetime.now(tz=utc):
+            return Response({"message":"Time is over"},status=status.HTTP_404_NOT_FOUND)
+        qnsAttended=QuestionAttended.objects.filter(examAttendedId=examAttendedObj,attendedBy=user)
+        marksObtain=0
+        for i in qnsAttended:
+            qnsID=i.questionId
+            optionId=i.optionId
+            optionObj=Option.objects.filter(id=optionId).first()
+            if optionObj and optionObj.qnsId==qnsID and optionObj.isCorrect:
+                marksObtain+=qnsID.marks
+        mxMarks=0
+        totalQns=Question.objects.filter(examId=exam)
+        for i in totalQns:
+            mxMarks+=i.marks
+
+           
+        
+        print(marksObtain)
+        print(mxMarks)
+        examAttendedObj.marksObtain=marksObtain
+        examAttendedObj.mxMarks=mxMarks
+        examAttendedObj.timeAlloted=datetime.now(tz=utc)
+        examAttendedObj.save()
+        return Response()
 
         
             
 
+        
 
 
 class AttendQuestionView(APIView):
@@ -141,6 +181,7 @@ class AttendQuestionView(APIView):
 
         return Response()
 class SubmitQnsView(APIView):
+    authentication_classes=[JWTAuthentication]
     def post(self,request):
         if request.user.is_anonymous:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -170,22 +211,3 @@ class SubmitQnsView(APIView):
         userQnsObj.optionId=optionId
         userQnsObj.save()
         return Response({"message":"Question is submitted successfully"})
-        
-        
-        
-        
-
-
-
-        
-        
-
-        
-
-        
-
-       
-
-         
-         
-        
