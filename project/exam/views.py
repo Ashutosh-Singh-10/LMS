@@ -69,8 +69,9 @@ class AttendExamView(APIView):
         questionObj=Question.objects.filter(examId=examId)
         serializer=QuestionIdSerializer(questionObj,many=True)
         print("how get")
-        timeRemaining=examObj
+        timeRemaining=examObj.timeAlloted-datetime.now(tz=utc)
         res={"Questions":serializer.data,
+             "timeRemaining":str(timeRemaining)
              
 
         }
